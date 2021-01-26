@@ -14,7 +14,13 @@
 
 # COMMAND ----------
 
-# MAGIC %fs ls /databricks-datasets/samples/
+# MAGIC %fs ls /databricks-datasets/airlines/part-00659
+
+# COMMAND ----------
+
+# MAGIC %sh
+# MAGIC 
+# MAGIC head /dbfs/databricks-datasets/airlines/part-00659
 
 # COMMAND ----------
 
@@ -63,6 +69,70 @@ df2 = (
 )
 
 display(df2)
+
+# COMMAND ----------
+
+df_airline = spark.read.format('csv').load('/databricks-datasets/airlines/*')
+df_airline.count()
+
+# COMMAND ----------
+
+df.printSchema()
+
+# COMMAND ----------
+
+# MAGIC %fs ls /home/masahiko.kitamura@databricks.com/
+
+# COMMAND ----------
+
+df.write.mode('overwrite').format('delta').save('dbfs:/home/masahiko.kitamura@databricks.com/airlines')
+
+# COMMAND ----------
+
+# MAGIC %sh
+# MAGIC ls -l /dbfs/databricks-datasets/airlines/
+
+# COMMAND ----------
+
+# MAGIC %sh 
+# MAGIC du -sh /dbfs/databricks-datasets/airlines/
+
+# COMMAND ----------
+
+# MAGIC %sh 
+# MAGIC ls -l /dbfs/home/masahiko.kitamura@databricks.com/airlines/
+
+# COMMAND ----------
+
+# MAGIC %sh
+# MAGIC du -sh /dbfs/home/masahiko.kitamura@databricks.com/airlines/
+
+# COMMAND ----------
+
+display(df)
+
+# COMMAND ----------
+
+df2_sum = df.groupby('issue_d').count().orderBy('issue_d')
+df2_sum = df2_sum.filter(col('issue_d').contains('-'))
+display(df2_sum)
+
+# COMMAND ----------
+
+from pyspark.sql.functions import split, month, date_format, to_timestamp, year
+
+df3 = (
+  df2_sum
+#  .withColumn('month', split(col('issue_d'), '-').getItem(0))
+#  .withColumn('year', split(col('issue_d'), '-').getItem(1))
+#  .withColumn('month_num', month('month'))
+  .withColumn('dat', to_timestamp('issue_d', 'MMM-yyyy'))
+  .withColumn('month', month('dat'))
+  .withColumn('year', year('dat'))
+  .select('count', 'year', 'month', 'dat')
+  .orderBy('dat')
+)
+display(df3)
 
 # COMMAND ----------
 
